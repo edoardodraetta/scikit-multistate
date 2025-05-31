@@ -4,7 +4,7 @@ Module for the generation of state diagrams for multistate models.
 
 import base64
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
 from IPython.display import Image, display
@@ -48,8 +48,8 @@ class StateDiagramGenerator:
         tstart: str,
         tstop: str,
         status: str,
-        state_labels: Optional[Dict[int, str]] = None,
-        terminal_states: Optional[List[int]] = None,
+        state_labels: Dict[int, str] | None = None,
+        terminal_states: List[int] | None = None,
     ):
         """Initialize the generator.
 
@@ -146,27 +146,28 @@ class StateDiagramGenerator:
         self.transition_times = defaultdict(list)
         self.states = set()
 
-        # Group by patient to track individual trajectories
-        for _, patient_data in self.data.groupby("patnr"):
-            # Sort by time to ensure proper sequence
-            patient_data = patient_data.sort_values([self.tstart, self.tstop])
+        if self.data is not None:
+            # Group by patient to track individual trajectories
+            for _, patient_data in self.data.groupby(self.patient_id):
+                # Sort by time to ensure proper sequence
+                patient_data = patient_data.sort_values([self.tstart, self.tstop])
 
-            for _, row in patient_data.iterrows():
-                origin = int(row[self.from_state])
-                target = int(row[self.to_state])
-                status = int(row[self.status])
-                transition_time = row[self.tstop] - row[self.tstart]
+                for _, row in patient_data.iterrows():
+                    origin = int(row[self.from_state])
+                    target = int(row[self.to_state])
+                    status = int(row[self.status])
+                    transition_time = row[self.tstop] - row[self.tstart]
 
-                # Add states to our set
-                self.states.add(origin)
-                self.states.add(target)
+                    # Add states to our set
+                    self.states.add(origin)
+                    self.states.add(target)
 
-                # Only count actual transitions (status = 1)
-                if status == 1:
-                    transition_key = (origin, target)
-                    self.transitions[origin].append(target)
-                    self.transition_counts[transition_key] += 1
-                    self.transition_times[transition_key].append(transition_time)
+                    # Only count actual transitions (status = 1)
+                    if status == 1:
+                        transition_key = (origin, target)
+                        self.transitions[origin].append(target)
+                        self.transition_counts[transition_key] += 1
+                        self.transition_times[transition_key].append(transition_time)
 
     def add_state_labels(self, labels: Dict[int, str]) -> None:
         """
