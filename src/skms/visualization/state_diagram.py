@@ -61,8 +61,8 @@ class StateDiagramGenerator:
             tstart (str): Start time in from state.
             tstop (str): Stop time in from state.
             status (str): Whether or not the transition to to state has occurred.
-            state_labels (Optional[Dict[int, str]], optional): Optional state labels. Defaults to None.
-            terminal_states (Optional[List[int]], optional): Definition of terminal states. Defaults to None.
+            state_labels (str, optional): Optional state labels. Defaults to None.
+            terminal_states (str, optional): Definition of terminal states. Defaults to None.
         """
         self.state_labels = state_labels or {}
         self.terminal_states = set(terminal_states or [])
