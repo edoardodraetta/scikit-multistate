@@ -1,0 +1,10 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": [],
+    "python.defaultInterpreterPath": "/home/azureuser/.cache/pypoetry/virtualenvs/pymsm-kD_N1ziH-py3.8",
+    "ruff.lint.ignore": [
+        "UP035",
+        "UP006",
+        "UP006",
+    ],
+}

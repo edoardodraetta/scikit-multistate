@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "pymsm"
+version = "0.1.7"
+description = "Multstate modeling in Python"
+authors = ["Hagai Rossman, Ayya Keshet, Malka Gorfine"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://hrossman.github.io/pymsm/"
+repository = "https://github.com/hrossman/pymsm"
+documentation = "https://hrossman.github.io/pymsm/"
+keywords = ["multstate", "competing risks", "survival"]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "^1.22.2"
+pandas = "^1.4.1"
+lifelines = "^0.26.4"
+matplotlib = "^3.5.1"
+joblib = "^1.1.0"
+tqdm = "^4.62.3"
+scikit-learn = "^1.0.2"
+tabulate = "^0.8.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0.1"
+ipykernel = "^6.9.1"
+coverage = {extras = ["toml"], version = "^6.3.2"}
+pytest-cov = "^3.0.0"
+mkdocs-material = "^8.2.1"
+mknotebooks = "^0.7.1"
+pre-commit = "^2.17.0"
+mkdocstrings = "^0.18.0"
+pytkdocs = {extras = ["numpy-style"], version = "^0.16.0"}
+scikit-survival = "^0.17.0"
+tabulate = "^0.8.9"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["pymsm"]
+
+[tool.coverage.report]
+show_missing = true
