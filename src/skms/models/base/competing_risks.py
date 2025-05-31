@@ -1,7 +1,164 @@
+"""
+Base estimator that serves multiple model types.
+"""
+
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sksurv.util import Surv
+
+
+class BaseCompetingRisksModel(ABC, BaseEstimator):
+    """
+    Foundation for competing risks analysis.
+
+    This abstract base class provides a common interface for competing risks models,
+    where multiple event types can occur and the occurrence of one event prevents
+    the occurrence of others.
+
+    Parameters
+    ----------
+    base_estimator : object, optional
+        The underlying estimator to use for modeling. Should implement fit/predict
+        methods compatible with survival analysis.
+
+    Attributes
+    ----------
+    base_estimator_ : object
+        The fitted base estimator.
+    event_types_ : array-like
+        Unique event types found in the training data.
+    duration_col_ : str
+        Name of the duration column used during fitting.
+    event_col_ : str
+        Name of the event column used during fitting.
+    """
+
+    @abstractmethod
+    def __init__(self, base_estimator: BaseEstimator | None = None) -> None:
+        """
+        Initialize the competing risks model.
+
+        Parameters
+        ----------
+        base_estimator : BaseEstimator, optional
+            The underlying estimator to use for modeling. If None, a default
+            estimator should be used by the concrete implementation.
+        """
+        self.base_estimator = base_estimator
+
+    @abstractmethod
+    def fit(self, df: pd.DataFrame, duration_col: str, event_col: str) -> "BaseCompetingRisksModel":
+        """
+        Fit the competing risks model to training data.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Training data containing duration and event information.
+        duration_col : str
+            Name of the column containing time-to-event or censoring times.
+        event_col : str
+            Name of the column containing event indicators. Should contain:
+            - 0 for censored observations
+            - Positive integers for different event types (1, 2, 3, etc.)
+
+        Returns
+        -------
+        self : BaseCompetingRisksModel
+            Fitted estimator.
+
+        Notes
+        -----
+        The event column should encode competing events as distinct positive integers,
+        with 0 indicating censoring (no event observed).
+        """
+        pass
+
+    @abstractmethod
+    def predict_cumulative_incidence(
+        self, X: pd.DataFrame | np.ndarray, times: list[float] | np.ndarray, event_type: int
+    ) -> np.ndarray:
+        """
+        Predict cumulative incidence function for a specific event type.
+
+        The cumulative incidence function (CIF) represents the probability that
+        an event of the specified type occurs by time t, accounting for the
+        presence of competing risks.
+
+        Parameters
+        ----------
+        X : pandas.DataFrame or numpy.ndarray of shape (n_samples, n_features)
+            Feature matrix for which to make predictions.
+        times : array-like of shape (n_times,)
+            Time points at which to evaluate the cumulative incidence function.
+        event_type : int
+            The event type for which to calculate cumulative incidence.
+            Must be one of the event types seen during fitting.
+
+        Returns
+        -------
+        cumulative_incidence : numpy.ndarray of shape (n_samples, n_times)
+            Cumulative incidence probabilities for each sample at each time point.
+            Values range from 0 to 1, representing the probability that the
+            specified event occurs by each time point.
+
+        Raises
+        ------
+        ValueError
+            If event_type was not seen during fitting or if the model hasn't
+            been fitted yet.
+        """
+        pass
+
+    def predict_survival_function(self, X: pd.DataFrame | np.ndarray, times: list[float] | np.ndarray) -> np.ndarray:
+        """
+        Predict overall survival function (probability of being event-free).
+
+        Parameters
+        ----------
+        X : pandas.DataFrame or numpy.ndarray of shape (n_samples, n_features)
+            Feature matrix for which to make predictions.
+        times : array-like of shape (n_times,)
+            Time points at which to evaluate the survival function.
+
+        Returns
+        -------
+        survival_probs : numpy.ndarray of shape (n_samples, n_times)
+            Survival probabilities for each sample at each time point.
+            Represents P(T > t) where T is time to any event.
+        """
+        # Default implementation - can be overridden by subclasses
+        # S(t) = 1 - sum of all cumulative incidences
+        if not hasattr(self, "event_types_"):
+            raise ValueError("Model must be fitted before making predictions")
+
+        total_cif = np.zeros((X.shape[0], len(times)))
+        for event_type in self.event_types_:
+            if event_type != 0:  # Skip censoring indicator
+                total_cif += self.predict_cumulative_incidence(X, times, event_type)
+
+        return 1 - total_cif
+
+    def get_event_types(self) -> np.ndarray:
+        """
+        Get the event types identified during fitting.
+
+        Returns
+        -------
+        event_types : numpy.ndarray
+            Array of unique event type identifiers, excluding censoring (0).
+
+        Raises
+        ------
+        ValueError
+            If the model hasn't been fitted yet.
+        """
+        if not hasattr(self, "event_types_"):
+            raise ValueError("Model must be fitted before accessing event types")
+        return self.event_types_[self.event_types_ != 0]
 
 
 class CompetingRisksModel(BaseEstimator):
@@ -104,7 +261,9 @@ class CompetingRisksModel(BaseEstimator):
         interpolated_cif = np.zeros((X.shape[0], len(times)))
 
         for i in range(X.shape[0]):
-            f = interp1d(event_times, cif_values[i, :], kind="previous", bounds_error=False, fill_value=(0, cif_values[i, -1]))
+            f = interp1d(
+                event_times, cif_values[i, :], kind="previous", bounds_error=False, fill_value=(0, cif_values[i, -1])
+            )
             interpolated_cif[i, :] = f(times)
 
         return interpolated_cif

@@ -1,5 +1,5 @@
-from base import BaseMultiStateEstimator, CompetingRisksModel
-from competing_risks.cox import CoxCompetingRisks
+from ..base import BaseMultiStateEstimator, CompetingRisksModel
+from ..competing_risks import CoxCompetingRisks
 
 # class MultiStateModel(BaseEstimator):
 #     """Multi-state model using any scikit-survival compatible estimator.

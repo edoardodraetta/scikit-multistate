@@ -1,3 +1,7 @@
+"""
+Define interface and functionality for all multistate models.
+"""
+
 from abc import ABC, abstractmethod
 
 from sklearn.base import BaseEstimator
